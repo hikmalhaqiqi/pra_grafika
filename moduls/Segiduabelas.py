@@ -1,6 +1,7 @@
 import streamlit as st
 import numpy as np
 import plotly.graph_objects as go
+import time
 
 def tampilkan():
     st.title("🔷 Transformasi Segi Dua Belas (2D)")
@@ -68,10 +69,75 @@ def tampilkan():
         trans_x = st.slider("Translasi X", -5.0, 5.0, 0.0, 0.1)
         trans_y = st.slider("Translasi Y", -5.0, 5.0, 0.0, 0.1)
 
-    # Buat dan tampilkan objek tunggal berdasarkan kontrol saat ini
-    x, y = create_dodecagon(radius, rotation, (trans_x, trans_y))
-    fig = draw_dodecagon(x, y, fill_color, border_color)
-    st.plotly_chart(fig, use_container_width=True)
+    # Tombol animasi dan kontrol kecepatan
+    st.subheader("🎬 Kontrol Animasi")
+    col_anim1, col_anim2 = st.columns(2)
+    
+    with col_anim1:
+        animate_button = st.button("🔄 Gerakkan", type="primary")
+        
+    with col_anim2:
+        animation_speed = st.selectbox("Kecepatan Animasi", 
+                                     ["Lambat", "Normal", "Cepat"], 
+                                     index=1)
+    
+    # Tentukan delay berdasarkan kecepatan
+    speed_map = {"Lambat": 0.2, "Normal": 0.1, "Cepat": 0.05}
+    delay = speed_map[animation_speed]
+
+    # Container untuk plot
+    plot_container = st.empty()
+
+    # Jika tombol ditekan, jalankan animasi
+    if animate_button:
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        
+        # Parameter animasi
+        total_frames = 60
+        
+        for frame in range(total_frames):
+            # Hitung rotasi dan translasi Y berdasarkan frame
+            animated_rotation = rotation + (frame * 360 / total_frames)
+            animated_trans_y = trans_y + 2 * np.sin(frame * 2 * np.pi / 20)  # Gerakan naik turun
+            
+            # Buat objek dengan parameter yang dianimasi
+            x, y = create_dodecagon(radius, animated_rotation, (trans_x, animated_trans_y))
+            fig = draw_dodecagon(x, y, fill_color, border_color)
+            
+            # Update plot
+            with plot_container.container():
+                st.plotly_chart(fig, use_container_width=True)
+            
+            # Update progress dan status
+            progress = (frame + 1) / total_frames
+            progress_bar.progress(progress)
+            status_text.text(f"Frame {frame + 1}/{total_frames} - Rotasi: {animated_rotation:.1f}° - Y: {animated_trans_y:.2f}")
+            
+            # Delay untuk mengontrol kecepatan animasi
+            time.sleep(delay)
+        
+        # Bersihkan progress bar dan status
+        progress_bar.empty()
+        status_text.empty()
+        st.success("✅ Animasi selesai!")
+        
+    else:
+        # Tampilkan objek statis berdasarkan kontrol saat ini
+        x, y = create_dodecagon(radius, rotation, (trans_x, trans_y))
+        fig = draw_dodecagon(x, y, fill_color, border_color)
+        with plot_container.container():
+            st.plotly_chart(fig, use_container_width=True)
+
+    # Informasi tambahan
+    st.subheader("ℹ️ Informasi")
+    st.info("""
+    **Cara menggunakan animasi:**
+    1. Atur parameter transformasi sesuai keinginan
+    2. Pilih kecepatan animasi (Lambat/Normal/Cepat)
+    3. Klik tombol "🔄 Gerakkan" untuk memulai animasi
+    4. Segi dua belas akan berputar 360° sambil bergerak naik-turun
+    """)
 
 if __name__ == "__main__":
     tampilkan()
